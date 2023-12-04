@@ -3,36 +3,78 @@ export default class SwapiService {
     _apiBase = 'https://swapi.dev/api';
 
     async getResource(url) {
-        const res = await fetch(`${this._apiBase}${url}`);
+        const res = await fetch(this._apiBase + url);
+        if(!res.ok)
+            throw new Error(`Could not fetch ${url}, received ${res.status}`);
 
-        if(!res.ok) throw new Error(`Could not fetch ${url}, received ${res.status}`);
-        return  await res.json();
+        return await res.json();
     }
 
     async getAllPeople() {
         const res = await this.getResource(`/people/`);
-        return res.results
+        return res.results.map(this._transformPerson);    
     }
 
-    getPerson(id) {
-        return this.getResource(`/people/${id}`)
+    async getPerson(id) {
+        const person = await this.getResource(`/people/${id}/`);
+        return this._transformPerson(person);
     }
 
     async getAllPlanets() {
         const res = await this.getResource(`/planets/`);
-        return res.results
-    }
+        return res.results.map(this._transformPlanet);    }
 
-    getPlanet(id) {
-        return this.getResource(`/planet/${id}`)
+    async getPlanet(id) {
+        const planet = await this.getResource(`/planets/${id}/`);
+        return this._transformPlanet(planet);
     }
 
     async getAllStarships() {
         const res = await this.getResource(`/starships/`);
-        return res.results
+        return res.results.map(this._transformStarship);
     }
 
-    getStarship(id) {
-        return this.getResource(`/starships/${id}`)
+    async getStarship(id) {
+        const starship = await this.getResource(`/starships/${id}/`);
+        return this._transformStarship(starship)
+    }
+
+    _extractId(item) {
+        const idRegExp = /\/([0-9]*)\/$/;   //  мы получаем из url палнет самый последнее число а именно номер планеты благодаря чему отображается его статистика которую мы прописали
+        return item.url.match(idRegExp)[1];
+    }
+
+    _transformPlanet = (planet) => { //трансофрматоры которые маппау.т ообъекты из апишки и приврощают для меня в более удобный формат данных чтобы легче работать
+        return {
+            id: this._extractId(planet),
+            name: planet.name,
+            population: planet.population,
+            rotationPeriod: planet.rotation_period,
+            diameter: planet.diameter
+        }
+    };
+
+    _transformStarship = (starship) => {
+        return {
+            id: this._extractId(starship),
+            name: starship.name,
+            model: starship.model,
+            manufacturer: starship.manufacturer,
+            costInCredits: starship.cost_in_credits,
+            length: starship.length,
+            crew: starship.crew,
+            passengers: starship.passengers,
+            cargoCapacity: starship.cargo_capacity
+        }
+    };
+
+    _transformPerson = (person) => {
+        return {
+            id: this._extractId(person),
+            name: person.name,
+            gender: person.gender,
+            birthYear: person.birth_year,
+            eyeColor: person.eye_color
+        }
     }
 }
